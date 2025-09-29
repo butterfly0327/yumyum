@@ -40,10 +40,6 @@
                     <p class="form-text mt-2">입력한 키는 이 브라우저 탭 전역에서 자동으로 사용되며, 탭을 닫거나 키를 지우면 초기화됩니다.</p>
                 </div>
             </div>
-            <div class="card p-3 mb-4">
-                <h4 class="mb-3">오늘의 AI 추천</h4>
-                <ul id="recommendation-list" class="list-group"></ul>
-            </div>
             <div class="card p-3">
                 <h4 class="mb-3">빠른 질문</h4>
                 <div class="d-grid gap-2">

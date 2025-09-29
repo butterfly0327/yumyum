@@ -16,7 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
         const quickQuestionBtns = document.querySelectorAll('.quick-question-btn');
-        const recommendationList = document.getElementById('recommendation-list');
 
         const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
@@ -73,12 +72,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return `당신은 사용자에게 명확하고 이해하기 쉬운 답변을 제공하는 전문 AI 코치입니다.\n답변의 가독성을 높이기 위해, 핵심 내용은 **굵은 글씨**로, 목록은 글머리 기호(*)를 사용하여 깔끔하게 정리해 주세요.\n모든 답변은 한국어로 작성합니다.\n사용자의 질문은 다음과 같습니다: ${userPrompt}`;
         }
 
-        function showRecommendationPlaceholder() {
-            if (recommendationList) {
-                recommendationList.innerHTML = '<li class="list-group-item text-muted">API 키를 설정하면 추천을 받을 수 있습니다.</li>';
-            }
-        }
-
         function showApiKeyNotice() {
             if (chatContainer.querySelector('.api-key-required')) {
                 return;
@@ -113,16 +106,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     })
                 });
 
-                const data = await response.json();
+                let data = null;
+                try {
+                    data = await response.json();
+                } catch (parseError) {
+                    console.error('Failed to parse Gemini response as JSON.', parseError);
+                }
+
+                if (!response.ok) {
+                    const apiErrorMessage = data?.error?.message;
+                    throw new Error(apiErrorMessage || `API 요청 실패: ${response.status} ${response.statusText}`);
+                }
+
                 removeLoadingMessage(loadingMessage);
 
-                if (data?.candidates?.[0]?.content?.parts?.[0]?.text) {
-                    addMessage(data.candidates[0].content.parts[0].text, 'ai');
-                } else if (data?.error?.message) {
-                    console.error('API Error:', data.error.message);
-                    addMessage(`죄송합니다. 오류가 발생했습니다: ${data.error.message}`, 'ai');
+                const aiText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (aiText) {
+                    addMessage(aiText, 'ai');
                 } else {
-                    addMessage('죄송합니다. 예상치 못한 오류로 응답을 받을 수 없습니다.', 'ai');
+                    throw new Error('AI 응답을 해석할 수 없습니다. 잠시 후 다시 시도해 주세요.');
                 }
             } catch (error) {
                 removeLoadingMessage(loadingMessage);
@@ -130,42 +132,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     addMessage('Gemini API 키가 설정되지 않았습니다. 키를 입력한 뒤 다시 시도해 주세요.', 'ai');
                     updateUiByApiKey();
                 } else {
-                    console.error('Error:', error);
-                    addMessage('죄송합니다. 오류가 발생하여 응답을 받을 수 없습니다.', 'ai');
+                    console.error('Error fetching AI response:', error);
+                    addMessage(`죄송합니다. 오류가 발생했습니다: ${error.message}`, 'ai');
                 }
             } finally {
                 sendBtn.disabled = !hasApiKey();
                 sendBtn.innerHTML = '전송';
             }
-        }
-
-        function getDailyRecommendation() {
-            if (!hasApiKey()) {
-                showRecommendationPlaceholder();
-                return;
-            }
-
-            fetch(buildGeminiUrl(), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [{ text: "오늘의 식단 추천, 칼로리 계산 방법, 단백질 섭취 팁, 식단 계획 세우기 중에서 랜덤으로 하나를 선택하여 '오늘의 AI 추천' 제목에 어울리게 한 문장으로 간결하게 요약해줘." }]
-                    }]
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data?.candidates?.[0]?.content?.parts?.[0]?.text) {
-                    recommendationList.innerHTML = `<li class="list-group-item">${data.candidates[0].content.parts[0].text}</li>`;
-                } else {
-                    recommendationList.innerHTML = `<li class="list-group-item text-danger">추천을 불러오는 데 실패했습니다.</li>`;
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching daily recommendation:', error);
-                recommendationList.innerHTML = `<li class="list-group-item text-danger">추천을 불러오는 데 실패했습니다.</li>`;
-            });
         }
 
         function updateUiByApiKey() {
@@ -178,10 +151,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (available) {
                 clearApiKeyNotice();
-                getDailyRecommendation();
             } else {
                 showApiKeyNotice();
-                showRecommendationPlaceholder();
             }
         }
 
