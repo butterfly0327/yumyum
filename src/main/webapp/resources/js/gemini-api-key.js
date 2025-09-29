@@ -13,14 +13,18 @@
 
         let lastHasKey = Boolean(window.appUtils.getGeminiApiKey());
 
-        function updateStatus(hasKey, variant) {
+        function updateStatus(hasKey, variant, customMessage) {
             if (!status) {
                 return;
             }
             const resolvedVariant = variant || (hasKey ? 'success' : 'muted');
             status.className = `form-text text-${resolvedVariant}`;
+            if (customMessage) {
+                status.textContent = customMessage;
+                return;
+            }
             status.textContent = hasKey
-                ? '입력한 Gemini API 키가 자동으로 사용됩니다. (페이지를 새로고침하면 초기화됩니다.)'
+                ? '입력한 Gemini API 키가 저장되어 이 브라우저 탭에서 자동으로 사용됩니다.'
                 : 'Gemini API 키를 입력하면 AI 기능을 사용할 수 있습니다.';
         }
 
@@ -29,7 +33,10 @@
             if (trimmed) {
                 lastHasKey = true;
                 window.appUtils.setGeminiApiKey(trimmed);
-                updateStatus(true);
+                const isLikelyValid = trimmed.length >= 20;
+                updateStatus(true, isLikelyValid ? 'success' : 'warning', isLikelyValid
+                    ? undefined
+                    : '입력된 값이 Gemini API 키 형식과 다를 수 있습니다. 다시 확인해 주세요.');
             } else {
                 const hadKeyBefore = lastHasKey;
                 lastHasKey = false;

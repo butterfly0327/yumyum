@@ -1,11 +1,57 @@
 const appConfig = window.appConfig || {};
 const appRoot = appConfig.contextPath || '';
 let cachedAuthStatus = null;
+
+const GEMINI_STORAGE_KEY = 'yumyumcoach.geminiApiKey';
 let geminiApiKey = '';
 
 function normalizeGeminiApiKey(key) {
     return (key || '').trim();
 }
+
+function getGeminiStorage() {
+    try {
+        const storage = window.sessionStorage;
+        const testKey = '__yumyumcoach_storage_test__';
+        storage.setItem(testKey, 'ok');
+        storage.removeItem(testKey);
+        return storage;
+    } catch (error) {
+        console.warn('세션 스토리지를 사용할 수 없어 Gemini API 키를 메모리에만 저장합니다.', error);
+        return null;
+    }
+}
+
+const geminiStorage = getGeminiStorage();
+
+function loadStoredGeminiApiKey() {
+    if (!geminiStorage) {
+        return '';
+    }
+    try {
+        return normalizeGeminiApiKey(geminiStorage.getItem(GEMINI_STORAGE_KEY));
+    } catch (error) {
+        console.warn('Gemini API 키를 스토리지에서 불러오는 중 문제가 발생했습니다.', error);
+        return '';
+    }
+}
+
+function persistGeminiApiKey(value) {
+    if (!geminiStorage) {
+        return;
+    }
+    try {
+        if (value) {
+            geminiStorage.setItem(GEMINI_STORAGE_KEY, value);
+        } else {
+            geminiStorage.removeItem(GEMINI_STORAGE_KEY);
+        }
+    } catch (error) {
+        console.warn('Gemini API 키를 스토리지에 저장하는 중 문제가 발생했습니다.', error);
+    }
+}
+
+geminiApiKey = loadStoredGeminiApiKey();
 
 async function apiFetch(path, options = {}) {
     const url = path.startsWith('http') ? path : `${appRoot}${path}`;
@@ -98,6 +144,12 @@ async function updateAuthButtons() {
 }
 
 function getGeminiApiKey() {
+    if (!geminiApiKey) {
+        const stored = loadStoredGeminiApiKey();
+        if (stored) {
+            geminiApiKey = stored;
+        }
+    }
     return geminiApiKey;
 }
 
@@ -109,6 +161,8 @@ function setGeminiApiKey(key) {
     if (normalizedKey === previousKey) {
         return;
     }
+
+    persistGeminiApiKey(geminiApiKey);
 
     document.dispatchEvent(new CustomEvent('geminiApiKeyChanged', {
         detail: { hasKey: Boolean(geminiApiKey) }

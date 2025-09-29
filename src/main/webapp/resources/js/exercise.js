@@ -70,15 +70,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
             });
 
-            if (!response.ok) {
-                let errorDetails = `API 요청 실패: ${response.status} ${response.statusText}`;
-                if (response.status === 429) {
-                    errorDetails = 'API 사용량 한도 초과입니다. 잠시 후 다시 시도해 주세요.';
-                }
-                throw new Error(errorDetails);
+            let data = null;
+            try {
+                data = await response.json();
+            } catch (error) {
+                // ignore JSON parse error and handle via status below
             }
 
-            return response.json();
+            if (!response.ok) {
+                const apiErrorMessage = data?.error?.message;
+                if (response.status === 429) {
+                    throw new Error('API 사용량 한도 초과입니다. 잠시 후 다시 시도해 주세요.');
+                }
+                if (apiErrorMessage) {
+                    throw new Error(apiErrorMessage);
+                }
+                throw new Error(`API 요청 실패: ${response.status} ${response.statusText}`);
+            }
+
+            if (data?.error?.message) {
+                throw new Error(data.error.message);
+            }
+
+            if (!data) {
+                throw new Error('API 응답을 해석할 수 없습니다. 잠시 후 다시 시도해 주세요.');
+            }
+
+            return data;
         }
 
         exerciseForm.addEventListener('submit', async (event) => {

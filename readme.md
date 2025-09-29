@@ -53,12 +53,7 @@ mvn clean package
 
 ### 3. Gemini API 키 설정
 
-AI 코치와 운동 기록 예측은 클라이언트 측에서 Google Generative AI(Gemini)를 호출합니다. 아래 파일의 `GEMINI_API_KEY` 값을 발급받은 키로 교체하세요.
-
-```
-src/main/webapp/resources/js/ai-coach.js
-src/main/webapp/resources/js/exercise.js
-```
+AI 코치와 운동 기록 예측은 클라이언트 측에서 Google Generative AI(Gemini)를 호출합니다. 각 페이지의 "Gemini API 키" 카드에 발급받은 키를 입력하면 현재 브라우저 탭 전역에서 자동으로 공유되며, 탭을 닫거나 키를 지우면 초기화됩니다.
 <br>
 
 ### 4. 서버 실행
