@@ -83,7 +83,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let response;
             try {
-                response = await fetch(`${GEMINI_API_URL}${encodeURIComponent(apiKey)}`, {
+                const apiUrl = `${GEMINI_API_URL}${encodeURIComponent(apiKey)}`;
+                response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

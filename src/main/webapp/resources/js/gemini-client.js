@@ -128,9 +128,9 @@
 
         const model = resolveModel(options?.model);
         const body = buildBody(options);
-        const url = `${API_BASE}/${encodeURIComponent(model)}:generateContent`;
+        const url = `${API_BASE}/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
-        const response = await fetch(`${url}?key=${encodeURIComponent(apiKey)}`, {
+        const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
