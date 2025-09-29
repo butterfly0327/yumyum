@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const saveExerciseBtn = document.getElementById('save-exercise-btn');
         const totalWeeklyCaloriesEl = document.getElementById('total-weekly-calories');
 
-        const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+        const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=';
 
         exerciseDateInput.valueAsDate = new Date();
         let chartInstance;
@@ -83,7 +83,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let response;
             try {
-                response = await fetch(`${GEMINI_ENDPOINT}?key=${encodeURIComponent(apiKey)}`, {
+                const apiUrl = `${GEMINI_API_URL}${encodeURIComponent(apiKey)}`;
+                response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
