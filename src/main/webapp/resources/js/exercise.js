@@ -20,18 +20,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const saveExerciseBtn = document.getElementById('save-exercise-btn');
         const totalWeeklyCaloriesEl = document.getElementById('total-weekly-calories');
 
-        const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
-
         exerciseDateInput.valueAsDate = new Date();
         let chartInstance;
         let extractedCalories = 0;
 
-        function getApiKey() {
-            return (appUtils.getGeminiApiKey?.() || '').trim();
-        }
-
         function hasApiKey() {
-            return Boolean(getApiKey());
+            return Boolean(window.GeminiClient?.hasApiKey?.());
         }
 
         function showMissingKeyMessage() {
@@ -52,86 +46,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        function extractCandidateText(data) {
-            const candidates = data?.candidates;
-            if (!Array.isArray(candidates) || candidates.length === 0) {
-                return '';
-            }
-            return candidates
-                .flatMap(candidate => candidate?.content?.parts || [])
-                .map(part => (typeof part?.text === 'string' ? part.text : ''))
-                .join('')
-                .trim();
-        }
-
-        function buildCaloriePrompt(userPrompt) {
-            return [
-                '너는 사용자의 운동 기록을 보고 소모 칼로리를 계산하는 전문 AI 코치야.',
-                '소모 칼로리 값을 숫자로만 알려 주고, 단위(kcal)나 다른 설명은 절대 포함하지 마.',
-                '만약 정확한 계산이 어렵다면 0을 반환해.',
-                `운동 내용: ${userPrompt}`
-            ].join(' ');
-        }
-
-        async function requestGemini(promptText) {
-            const apiKey = getApiKey();
-            if (!apiKey) {
-                const error = new Error('Gemini API 키가 설정되지 않았습니다. 키를 입력해 주세요.');
-                error.code = 'API_KEY_MISSING';
-                throw error;
-            }
-
-            let response;
-            try {
-                response = await fetch(`${GEMINI_ENDPOINT}?key=${encodeURIComponent(apiKey)}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        contents: [
-                            {
-                                parts: [{ text: promptText }]
-                            }
-                        ]
-                    })
-                });
-            } catch (networkError) {
-                const error = new Error('AI 서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.');
-                error.code = 'NETWORK_ERROR';
-                error.cause = networkError;
-                throw error;
-            }
-
-            let data;
-            try {
-                data = await response.json();
-            } catch (parseError) {
-                const error = new Error('AI 응답을 해석할 수 없습니다. 잠시 후 다시 시도해 주세요.');
-                error.code = 'PARSE_ERROR';
-                error.cause = parseError;
-                throw error;
-            }
-
-            if (!response.ok) {
-                const message = data?.error?.message || `API 요청 실패: ${response.status} ${response.statusText}`;
-                const error = new Error(message);
-                error.code = data?.error?.status || response.status;
-                error.data = data;
-                throw error;
-            }
-
-            const text = extractCandidateText(data);
-            if (!text) {
-                const error = new Error('AI 응답을 해석할 수 없습니다. 잠시 후 다시 시도해 주세요.');
-                error.code = data?.candidates?.[0]?.finishReason || 'EMPTY_RESPONSE';
-                error.data = data;
-                throw error;
-            }
-
-            return text;
-        }
-
         exerciseForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             const prompt = exercisePromptInput.value.trim();
@@ -150,7 +64,25 @@ document.addEventListener('DOMContentLoaded', () => {
             submitButton.disabled = true;
 
             try {
-                const aiText = await requestGemini(buildCaloriePrompt(prompt));
+                if (!window.GeminiClient || typeof window.GeminiClient.generateContent !== 'function') {
+                    const error = new Error('AI 클라이언트를 불러오지 못했습니다. 페이지를 새로고침한 뒤 다시 시도해 주세요.');
+                    error.code = 'CLIENT_MISSING';
+                    throw error;
+                }
+                const response = await window.GeminiClient.generateContent({
+                    systemInstruction: [
+                        '너는 사용자의 운동 기록을 보고 소모 칼로리를 계산하는 전문 AI 코치야.',
+                        '반드시 숫자만으로 결과를 알려 주고, 단위(kcal)나 다른 설명은 절대 포함하지 마.',
+                        '정확한 계산이 어렵다면 0을 반환해.'
+                    ].join(' '),
+                    messages: [
+                        {
+                            role: 'user',
+                            parts: [prompt]
+                        }
+                    ]
+                });
+                const aiText = response?.text || '';
                 const numericValue = Number(aiText?.match(/\d+/g)?.join(''));
 
                 if (!isNaN(numericValue) && numericValue >= 0) {
@@ -171,6 +103,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     aiResponseEl.innerHTML = '<p class="text-danger">API 사용량 한도가 초과되었습니다. 잠시 후 다시 시도해 주세요.</p>';
                 } else if (error.code === 403 || error.code === 'PERMISSION_DENIED') {
                     aiResponseEl.innerHTML = '<p class="text-danger">API 키 권한이 부족합니다. 키 제한 설정을 확인한 뒤 다시 시도해 주세요.</p>';
+                } else if (error.code === 'CLIENT_MISSING') {
+                    aiResponseEl.innerHTML = `<p class="text-danger">${error.message}</p>`;
                 } else {
                     const message = error.message || 'AI 요청 중 오류가 발생했습니다.';
                     aiResponseEl.innerHTML = `<p class="text-danger">AI 요청 중 오류가 발생했습니다.<br>오류 상세: ${message}</p>`;

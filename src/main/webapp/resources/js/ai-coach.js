@@ -17,18 +17,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const sendBtn = document.getElementById('send-btn');
         const quickQuestionBtns = document.querySelectorAll('.quick-question-btn');
 
-        const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
-
         marked.setOptions({
             breaks: true,
         });
 
-        function getApiKey() {
-            return (appUtils.getGeminiApiKey?.() || '').trim();
-        }
-
         function hasApiKey() {
-            return Boolean(getApiKey());
+            return Boolean(window.GeminiClient?.hasApiKey?.());
         }
 
         function addMessage(text, sender) {
@@ -82,94 +76,31 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        function buildCoachPrompt(userPrompt) {
-            return [
-                '당신은 사용자에게 명확하고 이해하기 쉬운 답변을 제공하는 전문 AI 코치입니다.',
-                '핵심 내용은 **굵게**, 목록은 글머리 기호(*)로 정리해 주세요.',
-                '건강에 해롭거나 극단적인 조언은 피하고, 균형 잡힌 식습관과 안전한 운동을 권장하세요.',
-                '모든 답변은 한국어로 작성합니다.',
-                `사용자의 질문은 다음과 같습니다: ${userPrompt}`
-            ].join('\n');
-        }
-
-        function extractCandidateText(data) {
-            const candidates = data?.candidates;
-            if (!Array.isArray(candidates) || candidates.length === 0) {
-                return '';
-            }
-            return candidates
-                .flatMap(candidate => candidate?.content?.parts || [])
-                .map(part => (typeof part?.text === 'string' ? part.text : ''))
-                .join('')
-                .trim();
-        }
-
-        async function requestGemini(promptText) {
-            const apiKey = getApiKey();
-            if (!apiKey) {
-                const error = new Error('Gemini API 키가 설정되지 않았습니다. 키를 입력해 주세요.');
-                error.code = 'API_KEY_MISSING';
-                throw error;
-            }
-
-            let response;
-            try {
-                response = await fetch(`${GEMINI_ENDPOINT}?key=${encodeURIComponent(apiKey)}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        contents: [
-                            {
-                                parts: [{ text: promptText }]
-                            }
-                        ]
-                    })
-                });
-            } catch (networkError) {
-                const error = new Error('AI 서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.');
-                error.code = 'NETWORK_ERROR';
-                error.cause = networkError;
-                throw error;
-            }
-
-            let data;
-            try {
-                data = await response.json();
-            } catch (parseError) {
-                const error = new Error('AI 응답을 해석할 수 없습니다. 잠시 후 다시 시도해 주세요.');
-                error.code = 'PARSE_ERROR';
-                error.cause = parseError;
-                throw error;
-            }
-
-            if (!response.ok) {
-                const message = data?.error?.message || `API 요청 실패: ${response.status} ${response.statusText}`;
-                const error = new Error(message);
-                error.code = data?.error?.status || response.status;
-                error.data = data;
-                throw error;
-            }
-
-            const text = extractCandidateText(data);
-            if (!text) {
-                const error = new Error('AI 응답을 해석할 수 없습니다. 잠시 후 다시 시도해 주세요.');
-                error.code = data?.candidates?.[0]?.finishReason || 'EMPTY_RESPONSE';
-                error.data = data;
-                throw error;
-            }
-
-            return text;
-        }
-
         async function getAIResponse(userPrompt) {
             let loadingMessage;
 
             try {
                 loadingMessage = addLoadingMessage();
-                const prompt = buildCoachPrompt(userPrompt);
-                const aiText = await requestGemini(prompt);
+                if (!window.GeminiClient || typeof window.GeminiClient.generateContent !== 'function') {
+                    const error = new Error('AI 클라이언트를 불러오지 못했습니다. 페이지를 새로고침한 뒤 다시 시도해 주세요.');
+                    error.code = 'CLIENT_MISSING';
+                    throw error;
+                }
+                const response = await window.GeminiClient.generateContent({
+                    systemInstruction: [
+                        '당신은 사용자에게 명확하고 이해하기 쉬운 답변을 제공하는 전문 AI 코치입니다.',
+                        '핵심 내용은 **굵게**, 목록은 글머리 기호(*)로 정리해 주세요.',
+                        '건강에 해롭거나 극단적인 조언은 피하고, 균형 잡힌 식습관과 안전한 운동을 권장하세요.',
+                        '모든 답변은 한국어로 작성합니다.'
+                    ].join('\n'),
+                    messages: [
+                        {
+                            role: 'user',
+                            parts: [userPrompt]
+                        }
+                    ]
+                });
+                const aiText = response?.text || '';
                 removeLoadingMessage(loadingMessage);
                 addMessage(aiText, 'ai');
             } catch (error) {
@@ -185,6 +116,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     friendlyMessage = 'API 사용량 한도를 초과했습니다. 잠시 후 다시 시도해 주세요.';
                 } else if (error.code === 403 || error.code === 'PERMISSION_DENIED') {
                     friendlyMessage = 'API 키 권한이 부족합니다. 키 제한 설정을 확인한 뒤 다시 시도해 주세요.';
+                } else if (error.code === 'CLIENT_MISSING') {
+                    friendlyMessage = error.message;
                 } else {
                     console.error('Error fetching AI response:', error);
                     friendlyMessage = `죄송합니다. 오류가 발생했습니다: ${error.message}`;
