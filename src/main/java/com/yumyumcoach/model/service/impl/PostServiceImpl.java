@@ -3,7 +3,7 @@ package com.yumyumcoach.model.service.impl;
 import java.util.List;
 import java.util.Optional;
 
-import com.yumyumcoach.model.dao.FilePostDao;
+import com.yumyumcoach.model.dao.JdbcPostDao;
 import com.yumyumcoach.model.dao.PostDao;
 import com.yumyumcoach.model.dto.Comment;
 import com.yumyumcoach.model.dto.Post;
@@ -11,7 +11,7 @@ import com.yumyumcoach.model.service.PostService;
 
 public class PostServiceImpl implements PostService {
     private static final PostService INSTANCE = new PostServiceImpl();
-    private final PostDao postDao = FilePostDao.getInstance();
+    private final PostDao postDao = JdbcPostDao.getInstance();
 
     public static PostService getInstance() {
         return INSTANCE;
@@ -47,17 +47,11 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public void toggleLike(long id) {
-        postDao.findById(id).ifPresent(post -> {
-            post.setLikes(post.getLikes() + 1);
-            postDao.saveAll();
-        });
+        postDao.incrementLikes(id);
     }
 
     @Override
     public void addComment(long id, Comment comment) {
-        postDao.findById(id).ifPresent(post -> {
-            post.getComments().add(comment);
-            postDao.saveAll();
-        });
+        postDao.addComment(id, comment);
     }
 }

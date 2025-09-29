@@ -4,13 +4,13 @@ import java.util.List;
 import java.util.Optional;
 
 import com.yumyumcoach.model.dao.DietDao;
-import com.yumyumcoach.model.dao.FileDietDao;
+import com.yumyumcoach.model.dao.JdbcDietDao;
 import com.yumyumcoach.model.dto.DietRecord;
 import com.yumyumcoach.model.service.DietService;
 
 public class DietServiceImpl implements DietService {
     private static final DietService INSTANCE = new DietServiceImpl();
-    private final DietDao dietDao = FileDietDao.getInstance();
+    private final DietDao dietDao = JdbcDietDao.getInstance();
 
     public static DietService getInstance() {
         return INSTANCE;

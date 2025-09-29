@@ -1,0 +1,103 @@
+CREATE DATABASE IF NOT EXISTS ssafy CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE ssafy;
+
+CREATE TABLE IF NOT EXISTS accounts (
+    username VARCHAR(50) PRIMARY KEY,
+    password VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS profiles (
+    username VARCHAR(50) PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    height DOUBLE,
+    weight DOUBLE,
+    disease VARCHAR(255),
+    CONSTRAINT fk_profiles_account FOREIGN KEY (username) REFERENCES accounts(username) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS posts (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    author VARCHAR(50) NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    category VARCHAR(100),
+    content TEXT,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    likes INT NOT NULL DEFAULT 0,
+    CONSTRAINT fk_posts_author FOREIGN KEY (author) REFERENCES accounts(username) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS post_comments (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    post_id BIGINT NOT NULL,
+    author VARCHAR(50) NOT NULL,
+    content TEXT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_comments_post FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+    CONSTRAINT fk_comments_author FOREIGN KEY (author) REFERENCES accounts(username) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS diet_records (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    record_date DATE NOT NULL,
+    meal_type VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS diet_foods (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    diet_id BIGINT NOT NULL,
+    order_index INT NOT NULL,
+    food_code VARCHAR(50),
+    food_name VARCHAR(255) NOT NULL,
+    energy DOUBLE,
+    carbohydrate DOUBLE,
+    protein DOUBLE,
+    fat DOUBLE,
+    weight VARCHAR(50),
+    CONSTRAINT fk_diet_food_record FOREIGN KEY (diet_id) REFERENCES diet_records(id) ON DELETE CASCADE,
+    CONSTRAINT uq_diet_food_order UNIQUE (diet_id, order_index)
+);
+
+CREATE TABLE IF NOT EXISTS exercise_records (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    record_date DATE NOT NULL,
+    calories DOUBLE NOT NULL,
+    CONSTRAINT fk_exercise_account FOREIGN KEY (username) REFERENCES accounts(username) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS challenges (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    type VARCHAR(100) NOT NULL,
+    target DOUBLE,
+    duration INT,
+    description TEXT,
+    start_date DATE NOT NULL,
+    creator VARCHAR(50),
+    CONSTRAINT fk_challenges_creator FOREIGN KEY (creator) REFERENCES accounts(username) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS challenge_participants (
+    challenge_id BIGINT NOT NULL,
+    username VARCHAR(50) NOT NULL,
+    joined_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (challenge_id, username),
+    CONSTRAINT fk_participant_challenge FOREIGN KEY (challenge_id) REFERENCES challenges(id) ON DELETE CASCADE,
+    CONSTRAINT fk_participant_account FOREIGN KEY (username) REFERENCES accounts(username) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS follows (
+    follower_username VARCHAR(50) NOT NULL,
+    followee_username VARCHAR(50) NOT NULL,
+    followed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (follower_username, followee_username),
+    CONSTRAINT fk_follows_follower FOREIGN KEY (follower_username) REFERENCES accounts(username) ON DELETE CASCADE,
+    CONSTRAINT fk_follows_followee FOREIGN KEY (followee_username) REFERENCES accounts(username) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_posts_author ON posts(author);
+CREATE INDEX IF NOT EXISTS idx_comments_post ON post_comments(post_id);
+CREATE INDEX IF NOT EXISTS idx_diet_foods_diet ON diet_foods(diet_id);
+CREATE INDEX IF NOT EXISTS idx_exercise_username ON exercise_records(username);
+CREATE INDEX IF NOT EXISTS idx_follow_followee ON follows(followee_username);

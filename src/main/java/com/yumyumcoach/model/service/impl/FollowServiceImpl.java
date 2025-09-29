@@ -4,14 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import com.yumyumcoach.model.dao.FileFollowDao;
 import com.yumyumcoach.model.dao.FollowDao;
+import com.yumyumcoach.model.dao.JdbcFollowDao;
 import com.yumyumcoach.model.dto.FollowInfo;
 import com.yumyumcoach.model.service.FollowService;
 
 public class FollowServiceImpl implements FollowService {
     private static final FollowService INSTANCE = new FollowServiceImpl();
-    private final FollowDao followDao = FileFollowDao.getInstance();
+    private final FollowDao followDao = JdbcFollowDao.getInstance();
 
     public static FollowService getInstance() {
         return INSTANCE;
@@ -51,6 +51,6 @@ public class FollowServiceImpl implements FollowService {
         followDao.save(follower, followerInfo);
         followDao.save(followee, followeeInfo);
 
-        return followerInfo;
+        return followDao.findByUsername(follower).orElse(followerInfo);
     }
 }

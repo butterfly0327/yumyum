@@ -3,13 +3,13 @@ package com.yumyumcoach.model.service.impl;
 import java.util.Optional;
 
 import com.yumyumcoach.model.dao.AccountDao;
-import com.yumyumcoach.model.dao.FileAccountDao;
+import com.yumyumcoach.model.dao.JdbcAccountDao;
 import com.yumyumcoach.model.dto.Account;
 import com.yumyumcoach.model.service.AccountService;
 
 public class AccountServiceImpl implements AccountService {
     private static final AccountService INSTANCE = new AccountServiceImpl();
-    private final AccountDao accountDao = FileAccountDao.getInstance();
+    private final AccountDao accountDao = JdbcAccountDao.getInstance();
 
     public static AccountService getInstance() {
         return INSTANCE;
