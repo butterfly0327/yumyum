@@ -54,6 +54,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="${root}/resources/js/common.js"></script>
 <script src="${root}/resources/js/gemini-api-key.js"></script>
+<script src="${root}/resources/js/gemini-client.js"></script>
 <script src="${root}/resources/js/ai-coach.js"></script>
 </body>
 </html>

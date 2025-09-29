@@ -17,22 +17,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const sendBtn = document.getElementById('send-btn');
         const quickQuestionBtns = document.querySelectorAll('.quick-question-btn');
 
-        const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+        const SYSTEM_PROMPT = [
+            '당신은 식단과 운동을 도와주는 전문 AI 코치입니다.',
+            '모든 답변은 한국어로 작성합니다.',
+            '핵심 키워드는 **굵게**, 단계나 목록은 글머리 기호(*)로 보기 좋게 정리해 주세요.',
+            '건강에 유해하거나 극단적인 조언은 피하고, 균형 잡힌 식습관과 안전한 운동을 권장하세요.'
+        ].join('\n');
+
+        const conversationHistory = [];
 
         marked.setOptions({
             breaks: true,
         });
 
         function hasApiKey() {
-            return Boolean(appUtils.getGeminiApiKey());
-        }
-
-        function buildGeminiUrl() {
-            const apiKey = appUtils.getGeminiApiKey();
-            if (!apiKey) {
-                throw new Error('API_KEY_MISSING');
-            }
-            return `${GEMINI_ENDPOINT}?key=${encodeURIComponent(apiKey)}`;
+            return GeminiClient.hasApiKey();
         }
 
         function addMessage(text, sender) {
@@ -68,10 +67,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        function buildCoachingPrompt(userPrompt) {
-            return `당신은 사용자에게 명확하고 이해하기 쉬운 답변을 제공하는 전문 AI 코치입니다.\n답변의 가독성을 높이기 위해, 핵심 내용은 **굵은 글씨**로, 목록은 글머리 기호(*)를 사용하여 깔끔하게 정리해 주세요.\n모든 답변은 한국어로 작성합니다.\n사용자의 질문은 다음과 같습니다: ${userPrompt}`;
-        }
-
         function showApiKeyNotice() {
             if (chatContainer.querySelector('.api-key-required')) {
                 return;
@@ -90,50 +85,53 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        function buildUserMessage(question) {
+            return {
+                role: 'user',
+                parts: [{ text: question }]
+            };
+        }
+
         async function getAIResponse(userPrompt) {
             let loadingMessage;
-            try {
-                const apiUrl = buildGeminiUrl();
-                loadingMessage = addLoadingMessage();
+            const historyEntry = buildUserMessage(userPrompt);
+            conversationHistory.push(historyEntry);
+            if (conversationHistory.length > 12) {
+                const overflow = conversationHistory.length - 12;
+                const removeCount = overflow % 2 === 0 ? overflow : overflow + 1;
+                conversationHistory.splice(0, Math.min(removeCount, conversationHistory.length - 1));
+            }
 
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{
-                            parts: [{ text: buildCoachingPrompt(userPrompt) }]
-                        }]
-                    })
+            try {
+                loadingMessage = addLoadingMessage();
+                const result = await GeminiClient.generateContent({
+                    systemInstruction: SYSTEM_PROMPT,
+                    messages: conversationHistory,
                 });
 
-                let data = null;
-                try {
-                    data = await response.json();
-                } catch (parseError) {
-                    console.error('Failed to parse Gemini response as JSON.', parseError);
-                }
-
-                if (!response.ok) {
-                    const apiErrorMessage = data?.error?.message;
-                    throw new Error(apiErrorMessage || `API 요청 실패: ${response.status} ${response.statusText}`);
-                }
-
                 removeLoadingMessage(loadingMessage);
 
-                const aiText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (aiText) {
-                    addMessage(aiText, 'ai');
-                } else {
-                    throw new Error('AI 응답을 해석할 수 없습니다. 잠시 후 다시 시도해 주세요.');
-                }
+                const aiText = result.text;
+                addMessage(aiText, 'ai');
+                conversationHistory.push({
+                    role: 'model',
+                    parts: [{ text: aiText }]
+                });
             } catch (error) {
+                conversationHistory.pop();
                 removeLoadingMessage(loadingMessage);
-                if (error.message === 'API_KEY_MISSING') {
+
+                if (error.code === 'API_KEY_MISSING' || error.message === 'API_KEY_MISSING') {
                     addMessage('Gemini API 키가 설정되지 않았습니다. 키를 입력한 뒤 다시 시도해 주세요.', 'ai');
                     updateUiByApiKey();
+                } else if (error.finishReason === 'SAFETY') {
+                    addMessage(error.message, 'ai');
                 } else {
                     console.error('Error fetching AI response:', error);
-                    addMessage(`죄송합니다. 오류가 발생했습니다: ${error.message}`, 'ai');
+                    const friendlyMessage = error.code === 429 || error.code === 'RESOURCE_EXHAUSTED'
+                        ? 'API 사용량 한도를 초과했습니다. 잠시 후 다시 시도해 주세요.'
+                        : `죄송합니다. 오류가 발생했습니다: ${error.message}`;
+                    addMessage(friendlyMessage, 'ai');
                 }
             } finally {
                 sendBtn.disabled = !hasApiKey();
