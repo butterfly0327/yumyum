@@ -38,10 +38,34 @@ body {
     margin-bottom: 20px;
 }
 
+
 .chart-container {
     position: relative;
     height: 40vh;
     width: 100%;
+}
+
+.chart-wrapper {
+    position: relative;
+    width: 100%;
+    min-height: 250px;
+}
+
+.chart-wrapper canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+@media (min-width: 768px) {
+    .chart-wrapper {
+        min-height: 300px;
+    }
+}
+
+@media (min-width: 1200px) {
+    .chart-wrapper {
+        min-height: 340px;
+    }
 }
 
 .card {

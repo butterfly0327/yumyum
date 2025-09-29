@@ -19,13 +19,17 @@
         <div class="col-md-6 mb-4">
             <div class="card p-3 h-100">
                 <h4>주간 영양소 비율</h4>
-                <canvas id="nutritionPieChart"></canvas>
+                <div class="chart-wrapper">
+                    <canvas id="nutritionPieChart"></canvas>
+                </div>
             </div>
         </div>
         <div class="col-md-6 mb-4">
             <div class="card p-3 h-100">
                 <h4>일별 영양 섭취량</h4>
-                <canvas id="dailyNutritionChart"></canvas>
+                <div class="chart-wrapper">
+                    <canvas id="dailyNutritionChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
