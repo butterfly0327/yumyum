@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) {
                 removeLoadingMessage(loadingMessage);
                 if (error.message === 'API_KEY_MISSING') {
-                    addMessage('Gemini API 키가 설정되지 않았습니다. 키를 저장한 뒤 다시 시도해 주세요.', 'ai');
+                    addMessage('Gemini API 키가 설정되지 않았습니다. 키를 입력한 뒤 다시 시도해 주세요.', 'ai');
                     updateUiByApiKey();
                 } else {
                     console.error('Error:', error);

@@ -38,10 +38,10 @@
                         <div class="form-text" id="gemini-api-key-status"></div>
                     </div>
                     <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary flex-fill">저장</button>
+                        <button type="submit" class="btn btn-primary flex-fill">적용</button>
                         <button type="button" class="btn btn-outline-secondary flex-fill" id="gemini-api-key-clear">삭제</button>
                     </div>
-                    <p class="form-text mt-2">입력한 키는 이 브라우저의 로컬 저장소에만 보관됩니다.</p>
+                    <p class="form-text mt-2">입력한 키는 이 페이지에서만 사용되며 새로고침하면 초기화됩니다.</p>
                 </form>
             </div>
             <div class="card p-3 mb-4">

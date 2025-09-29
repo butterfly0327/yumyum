@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (!hasApiKey()) {
-                alert('AI 기능을 사용하려면 Gemini API 키를 저장해 주세요.');
+                alert('AI 기능을 사용하려면 Gemini API 키를 입력해 주세요.');
                 updateUiByApiKey();
                 return;
             }

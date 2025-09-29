@@ -1,7 +1,7 @@
 const appConfig = window.appConfig || {};
 const appRoot = appConfig.contextPath || '';
 let cachedAuthStatus = null;
-const GEMINI_API_STORAGE_KEY = 'geminiApiKey';
+let geminiApiKey = '';
 
 async function apiFetch(path, options = {}) {
     const url = path.startsWith('http') ? path : `${appRoot}${path}`;
@@ -94,27 +94,14 @@ async function updateAuthButtons() {
 }
 
 function getGeminiApiKey() {
-    try {
-        return localStorage.getItem(GEMINI_API_STORAGE_KEY) || '';
-    } catch (error) {
-        console.error('Gemini API 키를 불러오는 중 오류가 발생했습니다:', error);
-        return '';
-    }
+    return geminiApiKey;
 }
 
 function setGeminiApiKey(key) {
-    try {
-        if (key) {
-            localStorage.setItem(GEMINI_API_STORAGE_KEY, key);
-        } else {
-            localStorage.removeItem(GEMINI_API_STORAGE_KEY);
-        }
-        document.dispatchEvent(new CustomEvent('geminiApiKeyChanged', {
-            detail: { hasKey: Boolean(key) }
-        }));
-    } catch (error) {
-        console.error('Gemini API 키를 저장하는 중 오류가 발생했습니다:', error);
-    }
+    geminiApiKey = (key || '').trim();
+    document.dispatchEvent(new CustomEvent('geminiApiKeyChanged', {
+        detail: { hasKey: Boolean(geminiApiKey) }
+    }));
 }
 
 function clearGeminiApiKey() {

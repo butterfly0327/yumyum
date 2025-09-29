@@ -17,34 +17,34 @@
             status.textContent = message;
         }
 
-        function refreshForm() {
-            const currentKey = window.appUtils.getGeminiApiKey();
-            if (input) {
-                input.value = currentKey;
-            }
-            if (currentKey) {
-                updateStatusMessage('Gemini API 키가 저장되었습니다. (브라우저 로컬에만 저장됩니다.)', 'success');
+        function applyCurrentKey() {
+            const newKey = (input?.value || '').trim();
+            window.appUtils.setGeminiApiKey(newKey);
+            if (newKey) {
+                updateStatusMessage('Gemini API 키가 적용되었습니다. (페이지를 새로고침하면 초기화됩니다.)', 'success');
             } else {
-                updateStatusMessage('Gemini API 키가 설정되지 않았습니다. 키를 입력하면 AI 기능을 사용할 수 있습니다.');
+                updateStatusMessage('Gemini API 키를 입력하면 AI 기능을 사용할 수 있습니다.');
             }
-            document.dispatchEvent(new CustomEvent('geminiApiKeyChanged', {
-                detail: { hasKey: Boolean(currentKey) }
-            }));
         }
 
         form.addEventListener('submit', (event) => {
             event.preventDefault();
-            const newKey = (input?.value || '').trim();
-            if (!newKey) {
-                updateStatusMessage('API 키를 입력해 주세요.', 'danger');
+            if (!input) {
                 return;
             }
-            window.appUtils.setGeminiApiKey(newKey);
-            if (input) {
-                input.value = newKey;
+            if (!input.value.trim()) {
+                updateStatusMessage('API 키를 입력해 주세요.', 'danger');
+                window.appUtils.clearGeminiApiKey();
+                return;
             }
-            updateStatusMessage('Gemini API 키가 저장되었습니다. (브라우저 로컬에만 저장됩니다.)', 'success');
+            applyCurrentKey();
         });
+
+        if (input) {
+            input.addEventListener('input', () => {
+                applyCurrentKey();
+            });
+        }
 
         if (clearBtn) {
             clearBtn.addEventListener('click', () => {
@@ -52,10 +52,10 @@
                 if (input) {
                     input.value = '';
                 }
-                updateStatusMessage('Gemini API 키가 삭제되었습니다.', 'warning');
+                updateStatusMessage('Gemini API 키가 초기화되었습니다.', 'warning');
             });
         }
 
-        refreshForm();
+        applyCurrentKey();
     });
 })();
