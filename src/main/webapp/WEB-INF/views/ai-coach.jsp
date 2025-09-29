@@ -30,8 +30,16 @@
         </div>
         <div class="col-lg-5">
             <div class="card p-3 mb-4">
-                <h4 class="mb-3">오늘의 AI 추천</h4>
-                <ul id="recommendation-list" class="list-group"></ul>
+                <h4 class="mb-3">Gemini API 키</h4>
+                <form id="api-key-form" class="row g-2">
+                    <div class="col-12">
+                        <input type="password" id="api-key-input" class="form-control" placeholder="Gemini API 키를 입력하세요" required>
+                    </div>
+                    <div class="col-12 d-grid">
+                        <button type="submit" class="btn btn-outline-secondary">API 키 설정</button>
+                    </div>
+                </form>
+                <p class="small text-muted mt-2" id="api-key-status">API 키는 질문을 전송할 때만 사용되며 서버에 저장되지 않습니다.</p>
             </div>
             <div class="card p-3">
                 <h4 class="mb-3">빠른 질문</h4>
