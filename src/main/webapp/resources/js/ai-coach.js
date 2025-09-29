@@ -19,8 +19,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const apiKeyForm = document.getElementById('api-key-form');
         const apiKeyInput = document.getElementById('api-key-input');
         const apiKeyStatus = document.getElementById('api-key-status');
+        const apiKeySubmitBtn = document.getElementById('api-key-submit-btn');
 
-        let geminiApiKey = '';
+        const GEMINI_API_KEY_STORAGE_KEY = 'yumyumGeminiApiKey';
+
+        let geminiApiKey = loadStoredApiKey();
 
         if (typeof marked !== 'undefined') {
             marked.setOptions({ breaks: true });
@@ -54,17 +57,65 @@ document.addEventListener('DOMContentLoaded', () => {
         if (apiKeyForm) {
             apiKeyForm.addEventListener('submit', (event) => {
                 event.preventDefault();
-                const value = apiKeyInput.value.trim();
-                if (!value) {
-                    updateApiKeyStatus('API 키를 입력해주세요.', 'danger');
-                    apiKeyInput.focus();
-                    return;
-                }
-                geminiApiKey = value;
-                apiKeyInput.value = '';
-                apiKeyInput.blur();
-                updateApiKeyStatus('API 키가 설정되었습니다. 질문을 전송하면 해당 요청에만 사용됩니다.', 'success');
             });
+        }
+
+        function loadStoredApiKey() {
+            try {
+                return sessionStorage.getItem(GEMINI_API_KEY_STORAGE_KEY) || '';
+            } catch (error) {
+                console.warn('Gemini API 키를 불러오는 중 문제가 발생했습니다.', error);
+                return '';
+            }
+        }
+
+        function persistApiKey(value) {
+            try {
+                if (value) {
+                    sessionStorage.setItem(GEMINI_API_KEY_STORAGE_KEY, value);
+                } else {
+                    sessionStorage.removeItem(GEMINI_API_KEY_STORAGE_KEY);
+                }
+            } catch (error) {
+                console.warn('Gemini API 키를 저장하는 중 문제가 발생했습니다.', error);
+            }
+        }
+
+        function handleApiKeySubmit() {
+            if (!apiKeyInput) {
+                return;
+            }
+            const value = apiKeyInput.value.trim();
+            if (!value) {
+                updateApiKeyStatus('API 키를 입력해주세요.', 'danger');
+                apiKeyInput.focus();
+                return;
+            }
+            geminiApiKey = value;
+            persistApiKey(geminiApiKey);
+            apiKeyInput.value = '';
+            apiKeyInput.blur();
+            updateApiKeyStatus('API 키가 설정되었습니다. 질문을 전송하면 해당 요청에만 사용됩니다.', 'success');
+        }
+
+        if (apiKeySubmitBtn) {
+            apiKeySubmitBtn.addEventListener('click', (event) => {
+                event.preventDefault();
+                handleApiKeySubmit();
+            });
+        }
+
+        if (apiKeyInput) {
+            apiKeyInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    handleApiKeySubmit();
+                }
+            });
+        }
+
+        if (geminiApiKey) {
+            updateApiKeyStatus('이전에 설정한 API 키를 계속 사용합니다. 질문을 입력해 보세요.', 'success');
         }
 
         function ensureApiKey() {
