@@ -64,6 +64,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <script src="${root}/resources/js/common.js"></script>
 <script src="${root}/resources/js/gemini-api-key.js"></script>
+<script src="${root}/resources/js/gemini-client.js"></script>
 <script src="${root}/resources/js/exercise.js"></script>
 </body>
 </html>
