@@ -31,18 +31,14 @@
         <div class="col-lg-5">
             <div class="card p-3 mb-4">
                 <h4 class="mb-3">Gemini API 키</h4>
-                <form id="gemini-api-key-form" autocomplete="off">
+                <div>
                     <div class="mb-3">
                         <label for="gemini-api-key-input" class="form-label">API 키</label>
                         <input type="password" class="form-control" id="gemini-api-key-input" placeholder="예: AIza..." autocomplete="new-password">
                         <div class="form-text" id="gemini-api-key-status"></div>
                     </div>
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary flex-fill">적용</button>
-                        <button type="button" class="btn btn-outline-secondary flex-fill" id="gemini-api-key-clear">삭제</button>
-                    </div>
-                    <p class="form-text mt-2">입력한 키는 이 페이지에서만 사용되며 새로고침하면 초기화됩니다.</p>
-                </form>
+                    <p class="form-text mt-2">입력한 키는 자동으로 적용되며 이 페이지에서만 사용됩니다. 새로고침하면 초기화됩니다.</p>
+                </div>
             </div>
             <div class="card p-3 mb-4">
                 <h4 class="mb-3">오늘의 AI 추천</h4>
