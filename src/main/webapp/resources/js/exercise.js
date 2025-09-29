@@ -20,18 +20,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const saveExerciseBtn = document.getElementById('save-exercise-btn');
         const totalWeeklyCaloriesEl = document.getElementById('total-weekly-calories');
 
-        const SYSTEM_PROMPT = [
-            '너는 사용자의 운동 기록을 보고 소모 칼로리를 추정하는 전문 AI 코치야.',
-            '모든 답변은 오직 숫자만으로 반환하고 단위(kcal)나 추가 설명은 절대 포함하지 마.',
-            '계산이 불가능하면 0을 반환해.'
-        ].join(' ');
+        const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
         exerciseDateInput.valueAsDate = new Date();
         let chartInstance;
         let extractedCalories = 0;
 
+        function getApiKey() {
+            return (appUtils.getGeminiApiKey?.() || '').trim();
+        }
+
         function hasApiKey() {
-            return GeminiClient.hasApiKey();
+            return Boolean(getApiKey());
         }
 
         function showMissingKeyMessage() {
@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
             submitButton.disabled = !available;
 
             if (available) {
-                if (!aiResponseEl.querySelector('#ai-placeholder') && !aiResponseEl.querySelector('.text-danger')) {
+                if (!aiResponseEl.querySelector('#ai-placeholder') && !aiResponseEl.querySelector('.text-danger') && !aiResponseEl.querySelector('.spinner-border')) {
                     aiResponseEl.innerHTML = '<p class="text-muted" id="ai-placeholder">여기에 AI의 답변이 표시됩니다.</p>';
                 }
             } else {
@@ -52,16 +52,84 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        async function requestCalories(prompt) {
-            const messages = [{
-                role: 'user',
-                parts: [{ text: prompt }]
-            }];
-            const result = await GeminiClient.generateContent({
-                systemInstruction: SYSTEM_PROMPT,
-                messages
-            });
-            return result.text;
+        function extractCandidateText(data) {
+            const candidates = data?.candidates;
+            if (!Array.isArray(candidates) || candidates.length === 0) {
+                return '';
+            }
+            return candidates
+                .flatMap(candidate => candidate?.content?.parts || [])
+                .map(part => (typeof part?.text === 'string' ? part.text : ''))
+                .join('')
+                .trim();
+        }
+
+        function buildCaloriePrompt(userPrompt) {
+            return [
+                '너는 사용자의 운동 기록을 보고 소모 칼로리를 계산하는 전문 AI 코치야.',
+                '소모 칼로리 값을 숫자로만 알려 주고, 단위(kcal)나 다른 설명은 절대 포함하지 마.',
+                '만약 정확한 계산이 어렵다면 0을 반환해.',
+                `운동 내용: ${userPrompt}`
+            ].join(' ');
+        }
+
+        async function requestGemini(promptText) {
+            const apiKey = getApiKey();
+            if (!apiKey) {
+                const error = new Error('Gemini API 키가 설정되지 않았습니다. 키를 입력해 주세요.');
+                error.code = 'API_KEY_MISSING';
+                throw error;
+            }
+
+            let response;
+            try {
+                response = await fetch(`${GEMINI_ENDPOINT}?key=${encodeURIComponent(apiKey)}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        contents: [
+                            {
+                                parts: [{ text: promptText }]
+                            }
+                        ]
+                    })
+                });
+            } catch (networkError) {
+                const error = new Error('AI 서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+                error.code = 'NETWORK_ERROR';
+                error.cause = networkError;
+                throw error;
+            }
+
+            let data;
+            try {
+                data = await response.json();
+            } catch (parseError) {
+                const error = new Error('AI 응답을 해석할 수 없습니다. 잠시 후 다시 시도해 주세요.');
+                error.code = 'PARSE_ERROR';
+                error.cause = parseError;
+                throw error;
+            }
+
+            if (!response.ok) {
+                const message = data?.error?.message || `API 요청 실패: ${response.status} ${response.statusText}`;
+                const error = new Error(message);
+                error.code = data?.error?.status || response.status;
+                error.data = data;
+                throw error;
+            }
+
+            const text = extractCandidateText(data);
+            if (!text) {
+                const error = new Error('AI 응답을 해석할 수 없습니다. 잠시 후 다시 시도해 주세요.');
+                error.code = data?.candidates?.[0]?.finishReason || 'EMPTY_RESPONSE';
+                error.data = data;
+                throw error;
+            }
+
+            return text;
         }
 
         exerciseForm.addEventListener('submit', async (event) => {
@@ -82,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
             submitButton.disabled = true;
 
             try {
-                const aiText = await requestCalories(prompt);
+                const aiText = await requestGemini(buildCaloriePrompt(prompt));
                 const numericValue = Number(aiText?.match(/\d+/g)?.join(''));
 
                 if (!isNaN(numericValue) && numericValue >= 0) {
@@ -96,14 +164,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } catch (error) {
                 console.error('Error:', error);
-                if (error.code === 'API_KEY_MISSING' || error.message === 'API_KEY_MISSING') {
+                if (error.code === 'API_KEY_MISSING') {
                     alert('Gemini API 키가 설정되지 않았습니다. 키를 입력해 주세요.');
                     showMissingKeyMessage();
+                } else if (error.code === 429 || error.code === 'RESOURCE_EXHAUSTED') {
+                    aiResponseEl.innerHTML = '<p class="text-danger">API 사용량 한도가 초과되었습니다. 잠시 후 다시 시도해 주세요.</p>';
+                } else if (error.code === 403 || error.code === 'PERMISSION_DENIED') {
+                    aiResponseEl.innerHTML = '<p class="text-danger">API 키 권한이 부족합니다. 키 제한 설정을 확인한 뒤 다시 시도해 주세요.</p>';
                 } else {
-                    const friendlyMessage = error.code === 429 || error.code === 'RESOURCE_EXHAUSTED'
-                        ? 'API 사용량 한도가 초과되었습니다. 잠시 후 다시 시도해 주세요.'
-                        : error.message;
-                    aiResponseEl.innerHTML = `<p class="text-danger">AI 요청 중 오류가 발생했습니다.<br>오류 상세: ${friendlyMessage}</p>`;
+                    const message = error.message || 'AI 요청 중 오류가 발생했습니다.';
+                    aiResponseEl.innerHTML = `<p class="text-danger">AI 요청 중 오류가 발생했습니다.<br>오류 상세: ${message}</p>`;
                 }
                 saveSectionEl.classList.add('d-none');
             } finally {
