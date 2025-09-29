@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const sendBtn = document.getElementById('send-btn');
         const quickQuestionBtns = document.querySelectorAll('.quick-question-btn');
 
-        const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+        const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=';
 
         marked.setOptions({
             breaks: true,
@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let response;
             try {
-                response = await fetch(`${GEMINI_ENDPOINT}?key=${encodeURIComponent(apiKey)}`, {
+                response = await fetch(`${GEMINI_API_URL}${encodeURIComponent(apiKey)}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
