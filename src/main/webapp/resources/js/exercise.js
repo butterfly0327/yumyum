@@ -1,7 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const GEMINI_API_KEY = 'YOUR_API_KEY';
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
-
     (async () => {
         try {
             const status = await appUtils.requireLogin();
@@ -14,52 +11,95 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function initializeExercise(username) {
         const exerciseForm = document.getElementById('exercise-form');
+        const exercisePromptInput = document.getElementById('exercise-prompt');
+        const exerciseDateInput = document.getElementById('exercise-date');
+        const submitButton = exerciseForm.querySelector('button[type="submit"]');
         const aiResponseEl = document.getElementById('ai-response');
-        const aiPlaceholderEl = document.getElementById('ai-placeholder');
         const saveSectionEl = document.getElementById('save-section');
         const caloriesToSaveEl = document.getElementById('calories-to-save');
         const saveExerciseBtn = document.getElementById('save-exercise-btn');
         const totalWeeklyCaloriesEl = document.getElementById('total-weekly-calories');
-        const exerciseDateInput = document.getElementById('exercise-date');
+
+        const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
         exerciseDateInput.valueAsDate = new Date();
         let chartInstance;
         let extractedCalories = 0;
 
-        exerciseForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const prompt = document.getElementById('exercise-prompt').value;
-            if (!GEMINI_API_KEY || GEMINI_API_KEY === 'YOUR_API_KEY') {
-                alert('AI 기능을 사용하려면 API 키를 설정하세요.');
-                return;
-            }
-            aiResponseEl.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
-            saveSectionEl.classList.add('d-none');
+        function hasApiKey() {
+            return Boolean(appUtils.getGeminiApiKey());
+        }
 
+        function buildGeminiUrl() {
+            const apiKey = appUtils.getGeminiApiKey();
+            if (!apiKey) {
+                throw new Error('API_KEY_MISSING');
+            }
+            return `${GEMINI_ENDPOINT}?key=${encodeURIComponent(apiKey)}`;
+        }
+
+        function showMissingKeyMessage() {
+            aiResponseEl.innerHTML = '<p class="text-muted api-key-alert">Gemini API 키를 설정하면 AI 응답을 받을 수 있습니다.</p>';
+            saveSectionEl.classList.add('d-none');
+        }
+
+        function updateUiByApiKey() {
+            const available = hasApiKey();
+            submitButton.disabled = !available;
+
+            if (available) {
+                if (!aiResponseEl.querySelector('#ai-placeholder') && !aiResponseEl.querySelector('.text-danger')) {
+                    aiResponseEl.innerHTML = '<p class="text-muted" id="ai-placeholder">여기에 AI의 답변이 표시됩니다.</p>';
+                }
+            } else {
+                showMissingKeyMessage();
+            }
+        }
+
+        async function requestCalories(prompt) {
+            const apiUrl = buildGeminiUrl();
             const coachingPrompt = `너는 사용자의 운동 칼로리를 계산해주는 전문 AI 코치야. 다음 운동 내용에 대해 소모 칼로리 값을 오직 숫자만으로 알려줘. 다른 설명이나 단위(kcal)는 절대 포함하지 마. 만약 계산이 불가능하거나 알 수 없다면 0을 반환해. 운동 내용: ${prompt}`;
 
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        "contents": [{
-                            "parts": [{
-                                "text": coachingPrompt
-                            }]
-                        }]
-                    }),
-                });
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{ text: coachingPrompt }]
+                    }]
+                })
+            });
 
-                if (!response.ok) {
-                    let errorDetails = `API 요청 실패: ${response.status} ${response.statusText}`;
-                    if (response.status === 429) {
-                        errorDetails = 'API 사용량 한도 초과입니다. 잠시 후 다시 시도해 주세요.';
-                    }
-                    throw new Error(errorDetails);
+            if (!response.ok) {
+                let errorDetails = `API 요청 실패: ${response.status} ${response.statusText}`;
+                if (response.status === 429) {
+                    errorDetails = 'API 사용량 한도 초과입니다. 잠시 후 다시 시도해 주세요.';
                 }
+                throw new Error(errorDetails);
+            }
 
-                const data = await response.json();
+            return response.json();
+        }
+
+        exerciseForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const prompt = exercisePromptInput.value.trim();
+            if (!prompt) {
+                return;
+            }
+
+            if (!hasApiKey()) {
+                alert('AI 기능을 사용하려면 Gemini API 키를 저장해 주세요.');
+                updateUiByApiKey();
+                return;
+            }
+
+            aiResponseEl.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
+            saveSectionEl.classList.add('d-none');
+            submitButton.disabled = true;
+
+            try {
+                const data = await requestCalories(prompt);
                 const aiText = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
                 const numericValue = Number(aiText?.match(/\d+/g)?.join(''));
 
@@ -76,6 +116,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('Error:', error);
                 aiResponseEl.innerHTML = `<p class="text-danger">AI 요청 중 오류가 발생했습니다.<br>오류 상세: ${error.message}</p>`;
                 saveSectionEl.classList.add('d-none');
+            } finally {
+                submitButton.disabled = !hasApiKey();
             }
         });
 
@@ -93,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('운동 기록이 성공적으로 저장되었습니다!');
                 loadAndDisplayWeeklyCalories();
                 saveSectionEl.classList.add('d-none');
-                document.getElementById('exercise-prompt').value = '';
+                exercisePromptInput.value = '';
                 aiResponseEl.innerHTML = '<p class="text-muted" id="ai-placeholder">여기에 AI의 답변이 표시됩니다.</p>';
                 extractedCalories = 0;
             } catch (error) {
@@ -166,5 +208,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         loadAndDisplayWeeklyCalories();
+        updateUiByApiKey();
+        document.addEventListener('geminiApiKeyChanged', updateUiByApiKey);
+
+        if (!hasApiKey()) {
+            showMissingKeyMessage();
+        }
     }
 });

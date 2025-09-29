@@ -30,6 +30,21 @@
         </div>
         <div class="col-lg-5">
             <div class="card p-3 mb-4">
+                <h4 class="mb-3">Gemini API 키</h4>
+                <form id="gemini-api-key-form" autocomplete="off">
+                    <div class="mb-3">
+                        <label for="gemini-api-key-input" class="form-label">API 키</label>
+                        <input type="password" class="form-control" id="gemini-api-key-input" placeholder="예: AIza..." autocomplete="new-password">
+                        <div class="form-text" id="gemini-api-key-status"></div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary flex-fill">저장</button>
+                        <button type="button" class="btn btn-outline-secondary flex-fill" id="gemini-api-key-clear">삭제</button>
+                    </div>
+                    <p class="form-text mt-2">입력한 키는 이 브라우저의 로컬 저장소에만 보관됩니다.</p>
+                </form>
+            </div>
+            <div class="card p-3 mb-4">
                 <h4 class="mb-3">오늘의 AI 추천</h4>
                 <ul id="recommendation-list" class="list-group"></ul>
             </div>
@@ -46,6 +61,7 @@
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="${root}/resources/js/common.js"></script>
+<script src="${root}/resources/js/gemini-api-key.js"></script>
 <script src="${root}/resources/js/ai-coach.js"></script>
 </body>
 </html>
