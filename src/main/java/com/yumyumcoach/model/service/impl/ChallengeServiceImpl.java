@@ -7,13 +7,13 @@ import java.util.Map;
 import java.util.Optional;
 
 import com.yumyumcoach.model.dao.ChallengeDao;
-import com.yumyumcoach.model.dao.FileChallengeDao;
+import com.yumyumcoach.model.dao.JdbcChallengeDao;
 import com.yumyumcoach.model.dto.Challenge;
 import com.yumyumcoach.model.service.ChallengeService;
 
 public class ChallengeServiceImpl implements ChallengeService {
     private static final ChallengeService INSTANCE = new ChallengeServiceImpl();
-    private final ChallengeDao challengeDao = FileChallengeDao.getInstance();
+    private final ChallengeDao challengeDao = JdbcChallengeDao.getInstance();
 
     public static ChallengeService getInstance() {
         return INSTANCE;

@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.yumyumcoach.config.DataStore;
+import com.yumyumcoach.model.dto.Comment;
 import com.yumyumcoach.model.dto.Post;
 
 public class FilePostDao implements PostDao {
@@ -61,5 +62,21 @@ public class FilePostDao implements PostDao {
     @Override
     public void saveAll() {
         store.savePosts();
+    }
+
+    @Override
+    public void incrementLikes(long id) {
+        findById(id).ifPresent(post -> {
+            post.setLikes(post.getLikes() + 1);
+            store.savePosts();
+        });
+    }
+
+    @Override
+    public void addComment(long postId, Comment comment) {
+        findById(postId).ifPresent(post -> {
+            post.getComments().add(comment);
+            store.savePosts();
+        });
     }
 }

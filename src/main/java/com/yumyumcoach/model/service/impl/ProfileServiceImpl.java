@@ -2,14 +2,14 @@ package com.yumyumcoach.model.service.impl;
 
 import java.util.Optional;
 
-import com.yumyumcoach.model.dao.FileProfileDao;
+import com.yumyumcoach.model.dao.JdbcProfileDao;
 import com.yumyumcoach.model.dao.ProfileDao;
 import com.yumyumcoach.model.dto.Profile;
 import com.yumyumcoach.model.service.ProfileService;
 
 public class ProfileServiceImpl implements ProfileService {
     private static final ProfileService INSTANCE = new ProfileServiceImpl();
-    private final ProfileDao profileDao = FileProfileDao.getInstance();
+    private final ProfileDao profileDao = JdbcProfileDao.getInstance();
 
     public static ProfileService getInstance() {
         return INSTANCE;
