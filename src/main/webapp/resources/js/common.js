@@ -3,6 +3,18 @@ const appRoot = appConfig.contextPath || '';
 let cachedAuthStatus = null;
 let geminiApiKey = '';
 
+function normalizeGeminiApiKey(key) {
+    return (key || '').trim();
+}
+
+function readGeminiApiKeyFromInput() {
+    const input = document.getElementById('gemini-api-key-input');
+    if (!input) {
+        return '';
+    }
+    return normalizeGeminiApiKey(input.value);
+}
+
 async function apiFetch(path, options = {}) {
     const url = path.startsWith('http') ? path : `${appRoot}${path}`;
     const fetchOptions = Object.assign({
@@ -94,11 +106,26 @@ async function updateAuthButtons() {
 }
 
 function getGeminiApiKey() {
+    if (geminiApiKey) {
+        return geminiApiKey;
+    }
+
+    const formValue = readGeminiApiKeyFromInput();
+    if (formValue) {
+        geminiApiKey = formValue;
+    }
     return geminiApiKey;
 }
 
 function setGeminiApiKey(key) {
-    geminiApiKey = (key || '').trim();
+    const normalizedKey = normalizeGeminiApiKey(key);
+    const previousKey = geminiApiKey;
+    geminiApiKey = normalizedKey;
+
+    if (normalizedKey === previousKey) {
+        return;
+    }
+
     document.dispatchEvent(new CustomEvent('geminiApiKeyChanged', {
         detail: { hasKey: Boolean(geminiApiKey) }
     }));

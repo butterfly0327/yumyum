@@ -17,14 +17,44 @@
             status.textContent = message;
         }
 
-        function applyCurrentKey() {
-            const newKey = (input?.value || '').trim();
-            window.appUtils.setGeminiApiKey(newKey);
-            if (newKey) {
-                updateStatusMessage('Gemini API 키가 적용되었습니다. (페이지를 새로고침하면 초기화됩니다.)', 'success');
-            } else {
-                updateStatusMessage('Gemini API 키를 입력하면 AI 기능을 사용할 수 있습니다.');
+        let appliedKey = window.appUtils.getGeminiApiKey();
+        if (input && appliedKey) {
+            input.value = appliedKey;
+        }
+
+        function syncInputWithAppliedKey(options = {}) {
+            const preserveWarning = Boolean(options.preserveWarning);
+            if (!input) {
+                return;
             }
+
+            if (preserveWarning && status?.classList.contains('text-warning')) {
+                return;
+            }
+
+            const currentValue = (input.value || '').trim();
+
+            if (appliedKey && currentValue === appliedKey) {
+                updateStatusMessage('Gemini API 키가 적용되었습니다. (페이지를 새로고침하면 초기화됩니다.)', 'success');
+                return;
+            }
+
+            if (appliedKey && !currentValue) {
+                updateStatusMessage('Gemini API 키가 적용되었습니다. (페이지를 새로고침하면 초기화됩니다.)', 'success');
+                return;
+            }
+
+            if (appliedKey && currentValue !== appliedKey) {
+                updateStatusMessage('변경된 내용을 적용하려면 "적용" 버튼을 눌러 주세요.', 'info');
+                return;
+            }
+
+            if (!appliedKey && currentValue) {
+                updateStatusMessage('입력한 키를 사용하려면 "적용" 버튼을 눌러 주세요.', 'info');
+                return;
+            }
+
+            updateStatusMessage('Gemini API 키를 입력하면 AI 기능을 사용할 수 있습니다.');
         }
 
         form.addEventListener('submit', (event) => {
@@ -37,12 +67,20 @@
                 window.appUtils.clearGeminiApiKey();
                 return;
             }
-            applyCurrentKey();
+            const newKey = input.value.trim();
+            window.appUtils.setGeminiApiKey(newKey);
+            appliedKey = newKey;
+            updateStatusMessage('Gemini API 키가 적용되었습니다. (페이지를 새로고침하면 초기화됩니다.)', 'success');
         });
 
         if (input) {
             input.addEventListener('input', () => {
-                applyCurrentKey();
+                const currentValue = input.value.trim();
+                if (!currentValue) {
+                    appliedKey = '';
+                    window.appUtils.clearGeminiApiKey();
+                }
+                syncInputWithAppliedKey();
             });
         }
 
@@ -53,9 +91,17 @@
                     input.value = '';
                 }
                 updateStatusMessage('Gemini API 키가 초기화되었습니다.', 'warning');
+                appliedKey = '';
+                setTimeout(() => syncInputWithAppliedKey(), 2500);
             });
         }
 
-        applyCurrentKey();
+        document.addEventListener('geminiApiKeyChanged', (event) => {
+            const hasKey = Boolean(event?.detail?.hasKey);
+            appliedKey = hasKey ? window.appUtils.getGeminiApiKey() : '';
+            syncInputWithAppliedKey({ preserveWarning: !hasKey });
+        });
+
+        syncInputWithAppliedKey();
     });
 })();
