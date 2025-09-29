@@ -1,0 +1,22 @@
+[
+  {
+    "id": 1755827002363,
+    "title": "칼로리 섭취 줄이기",
+    "type": "칼로리",
+    "target": 1000,
+    "duration": 20,
+    "description": "",
+    "startDate": "2025-08-22",
+    "creator": "aaaa"
+  },
+  {
+    "id": 1755827062546,
+    "title": "탄수화물 적게 먹기",
+    "type": "탄수화물",
+    "target": 2000,
+    "duration": 30,
+    "description": "탄수화물을 지정된 양보다 적게 섭취하기",
+    "startDate": "2025-08-22",
+    "creator": "aaaa"
+  }
+]

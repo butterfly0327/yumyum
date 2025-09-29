@@ -1,0 +1,18 @@
+{
+  "bbbb": {
+    "following": [
+      "aaaa"
+    ],
+    "followers": [
+      "aaaa"
+    ]
+  },
+  "aaaa": {
+    "following": [
+      "bbbb"
+    ],
+    "followers": [
+      "bbbb"
+    ]
+  }
+}

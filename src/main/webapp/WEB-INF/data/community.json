@@ -1,0 +1,18 @@
+[
+  {
+    "id": 1755751513895,
+    "author": "bbbb",
+    "title": "안녕하세요!",
+    "category": "자유",
+    "content": "반갑습니다!",
+    "date": "2025. 8. 21.",
+    "likes": 1,
+    "comments": [
+      {
+        "author": "aaaa",
+        "content": "안녕~",
+        "date": "2025. 8. 21."
+      }
+    ]
+  }
+]

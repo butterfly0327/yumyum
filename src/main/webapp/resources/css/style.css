@@ -1,0 +1,78 @@
+body {
+    background-color: #f8f9fa;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card-header {
+    background-color: #fff;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.progress {
+    height: 25px;
+    background-color: #e9ecef;
+}
+
+.progress-bar {
+    text-align: right;
+    padding-right: 10px;
+    font-weight: bold;
+    color: #333;
+}
+
+.progress-item label {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.list-group-item {
+    background-color: #fff;
+    border-color: #dee2e6;
+}
+
+.navbar {
+    margin-bottom: 20px;
+}
+
+.chart-container {
+    position: relative;
+    height: 40vh;
+    width: 100%;
+}
+
+.card {
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+.card-icon {
+    font-size: 2rem;
+    color: #007bff; /* 아이콘 색상 */
+    margin-bottom: 1rem;
+}
+
+.message-bubble {
+    padding: 10px 15px;
+    border-radius: 20px;
+    margin-bottom: 10px;
+    max-width: 80%; /* 너무 긴 줄 방지 */
+    word-wrap: break-word; /* 긴 단어 줄바꿈 */
+    line-height: 1.6; /* 줄 간격 넓히기 */
+}
+
+/* AI 메시지 스타일 */
+.ai-message {
+    background-color: #e9ecef;
+    color: #333;
+    align-self: flex-start;
+}
+
+/* 사용자 메시지 스타일 */
+.user-message {
+    background-color: #007bff;
+    color: white;
+    align-self: flex-end;
+}
