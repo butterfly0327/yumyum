@@ -37,7 +37,7 @@
                         <input type="password" class="form-control" id="gemini-api-key-input" placeholder="예: AIza..." autocomplete="new-password">
                         <div class="form-text" id="gemini-api-key-status"></div>
                     </div>
-                    <p class="form-text mt-2">입력한 키는 자동으로 적용되며 이 페이지에서만 사용됩니다. 새로고침하면 초기화됩니다.</p>
+                    <p class="form-text mt-2">입력한 키는 이 브라우저 탭 전역에서 자동으로 사용되며, 탭을 닫거나 키를 지우면 초기화됩니다.</p>
                 </div>
             </div>
             <div class="card p-3 mb-4">
